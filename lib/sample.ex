@@ -26,7 +26,7 @@ defmodule SM do
             gen_enum(map["enum"], map["type"])
         is_list(map["type"]) ->
             ntype = Enum.random(map["type"])
-            Map.put(map, map["type"], ntype)
+            Map.put(map, "type", ntype)
             gen_type(ntype, map)
         map["type"] in @types ->
             gen_type(map["type"], map)
