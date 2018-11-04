@@ -59,7 +59,7 @@ defmodule SMTest do
   end
   
   test "test integer enum" do
-    x = ~s({"type": "integer", "enum": [30, -11, 18, 75, 99, -65]})
+    x = ~s({"type": "integer", "enum": [30, -11, 18, 75, 99, -65, null, "abc"]})
     val = SM.generator(x)
     IO.puts val
     assert val in [30, -11, 18, 75, 99, -65]
