@@ -50,7 +50,17 @@ defmodule SM do
   end
     
   def gen_enum(list, type) do
-    Enum.random(list)
+    nlist =
+    case type do
+      x when x == "integer" ->
+        for n <- list, is_integer(n), do: n
+      x when x == "number" ->
+        for n <- list, is_number(n), do: n
+      x when x == "string" ->
+        for n <- list, is_binary(n), do: n
+      _ -> list
+    end
+    Enum.random(nlist)
   end
   
 end
