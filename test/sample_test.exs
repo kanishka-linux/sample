@@ -23,11 +23,39 @@ defmodule SMTest do
     assert val >= -87 and val <= 111 and rem(val, 9) == 0
   end
   
+  test "test integer excl" do
+    x = ~s({"type": "integer", "maximum": 120, "minimum": -87, "multipleOf": 6, "exclusiveMaximum": true})
+    val = SM.generator(x)
+    IO.puts val
+    assert val >= -87 and val < 120 and rem(val, 6) == 0
+  end
+  
   test "test number" do
     x = ~s({"type": "number", "maximum": 7.5, "minimum": 3.6})
     val = SM.generator(x)
     IO.puts val
     assert val >= 3.6 and val <=7.5
+  end
+  
+  test "test number multiple" do
+    x = ~s({"type": "number", "maximum": 9.7, "minimum": 3.2, "multipleOf": 1.5})
+    val = SM.generator(x)
+    IO.puts val
+    assert val >= 3.2 and val <= 9.7
+  end
+  
+  test "test number multiple again" do
+    x = ~s({"type": "number", "maximum": 9, "minimum": -3, "multipleOf": 2})
+    val = SM.generator(x)
+    IO.puts val
+    assert val >= -3 and val <= 9
+  end
+  
+  test "test number negative" do
+    x = ~s({"type": "number", "maximum": -3.2, "minimum": -9.7})
+    val = SM.generator(x)
+    IO.puts val
+    assert val >= -9.7 and val <= -3.2
   end
   
   test "test integer enum" do
