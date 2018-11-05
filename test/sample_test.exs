@@ -1,101 +1,109 @@
 defmodule SMTest do
   use ExUnit.Case
   doctest SM
-
+  
   test "test string" do
     x = ~s({"type": "string", "maxLength": 5, "minLength": 1})
     val = SM.generator(x)
+    schema = Poison.decode!(x) 
     IO.puts val
-    assert String.length(val) >=1 and String.length(val) <= 5
+    assert ExJsonSchema.Validator.valid?(schema, val)
   end
   
   test "test string regex" do
     x = ~s({"type": "string", "pattern": "[a-zA-Z0-9_]{5,10}@abc[.]\(org|com|in\)"})
     val = SM.generator(x)
+    schema = Poison.decode!(x) 
     IO.puts val
-    assert Regex.match?(~r/[a-zA-Z0-9_]{5,10}@abc[.](org|com|in)/, val)
+    assert ExJsonSchema.Validator.valid?(schema, val)
   end
   
   test "test integer" do
     x = ~s({"type": "integer", "maximum": 111, "minimum": -87, "multipleOf": 9})
+    schema = Poison.decode!(x) 
     val = SM.generator(x)
     IO.puts val
-    assert val >= -87 and val <= 111 and rem(val, 9) == 0
+    assert ExJsonSchema.Validator.valid?(schema, val)
   end
   
   test "test integer excl" do
     x = ~s({"type": "integer", "maximum": 120, "minimum": -87, "multipleOf": 6, "exclusiveMaximum": true})
+    schema = Poison.decode!(x) 
     val = SM.generator(x)
     IO.puts val
-    assert val >= -87 and val < 120 and rem(val, 6) == 0
+    assert ExJsonSchema.Validator.valid?(schema, val)
   end
   
   test "test number" do
     x = ~s({"type": "number", "maximum": 7.5, "minimum": 3.6})
+    schema = Poison.decode!(x) 
     val = SM.generator(x)
     IO.puts val
-    assert val >= 3.6 and val <=7.5
+    assert ExJsonSchema.Validator.valid?(schema, val)
   end
   
   test "test number multiple" do
     x = ~s({"type": "number", "maximum": 9.7, "minimum": 3.2, "multipleOf": 1.5})
+    schema = Poison.decode!(x) 
     val = SM.generator(x)
     IO.puts val
-    assert val >= 3.2 and val <= 9.7
+    assert ExJsonSchema.Validator.valid?(schema, val)
   end
   
   test "test number multiple again" do
-    x = ~s({"type": "number", "maximum": 9, "minimum": -3, "multipleOf": 2})
+    x = ~s({"type": "number", "maximum": 9.8, "minimum": -3.6, "multipleOf": 2})
+    schema = Poison.decode!(x) 
     val = SM.generator(x)
     IO.puts val
-    assert val >= -3 and val <= 9
+    assert ExJsonSchema.Validator.valid?(schema, val)
   end
   
   test "test number negative" do
-    x = ~s({"type": "number", "maximum": -3.2, "minimum": -9.7})
+    x = ~s({"type": "number", "maximum": -3, "minimum": -9})
+    schema = Poison.decode!(x)
     val = SM.generator(x)
     IO.puts val
-    assert val >= -9.7 and val <= -3.2
+    assert ExJsonSchema.Validator.valid?(schema, val)
   end
   
   test "test integer enum" do
     x = ~s({"type": "integer", "enum": [30, -11, 18, 75, 99, -65, null, "abc"]})
+    schema = Poison.decode!(x)
     val = SM.generator(x)
     IO.puts val
-    assert val in [30, -11, 18, 75, 99, -65]
+    assert ExJsonSchema.Validator.valid?(schema, val)
   end
   
   test "test only enum" do
     x = ~s({"enum": [1, 2, "hello", -3, "world"]})
     val = SM.generator(x)
+    schema = Poison.decode!(x)
     IO.puts val
-    assert val in [1, 2, "hello", -3, "world"]
+    assert ExJsonSchema.Validator.valid?(schema, val)
   end
   
   test "test boolean" do
     x = ~s({"type": "boolean"})
+    schema = Poison.decode!(x)
     val = SM.generator(x)
     IO.puts val
-    assert val in [true, false]
+    assert ExJsonSchema.Validator.valid?(schema, val)
   end
   
   test "test null" do
     x = ~s({"type": "null"})
+    schema = Poison.decode!(x)
     val = SM.generator(x)
     IO.puts val
-    assert val == "null"
+    assert ExJsonSchema.Validator.valid?(schema, val)
   end
   
   test "test type both integer string" do
-    x = ~s({"type": ["string", "integer"], "maxLength": 5, "minLength": 1})
+    x = ~s({"type": ["string", "integer"], "maxLength": 5, "minLength": 1, "maximum": 29})
+    schema = Poison.decode!(x)
     val = SM.generator(x)
     IO.puts val
-    cond do
-        is_binary(val) ->
-            assert String.length(val) >=1 and String.length(val) <= 5
-        is_integer(val) ->
-            assert true
-    end
+    assert ExJsonSchema.Validator.valid?(schema, val)
   end
   
 end
