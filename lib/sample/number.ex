@@ -10,10 +10,38 @@ defmodule SM.Number do
   def gen_number_init(map, enum, type) when is_list(enum), do: SM.gen_enum(enum, type)
 
   def gen_number_init(map, enum, type) when type == "integer" or type == "number" do
-    min = findmin(map, @num_min)
-    max = findmax(map, @num_max)
+    {step_left, step_right} = find_step(map, map["minimum"], map["maximum"])
+    min = findmin(map, @num_min, step_left, type)
+    max = findmax(map, @num_max, step_right, type)
     random_number_gen(map["multipleOf"], type, min, max)
   end
+
+  def find_step(map, low, high) when is_number(low) and is_number(high) and low <= high do
+    mult = map["multipleOf"]
+
+    if is_number(mult) do
+      step_left = mult * (trunc(low / mult) + 1) - low
+      step_right = high - mult * trunc(high / mult)
+
+      case {step_left, step_right} do
+        {x, y} when x == 0 and y == 0 ->
+          {(mult * (low / mult + 1) - low) / 2, (high - mult * (high / mult - 1)) / 2}
+
+        {x, y} when x == 0 ->
+          {(mult * (low / mult + 1) - low) / 2, y}
+
+        {x, y} when y == 0 ->
+          {x, (high - mult * (high / mult - 1)) / 2}
+
+        _ ->
+          {step_left, step_right}
+      end
+    else
+      {(high - low) / 1000, (high - low) / 1000}
+    end
+  end
+
+  def find_step(map, low, high) when true, do: {0.001, 0.001}
 
   def random_number_gen(mult, type, min, max) when type == "integer" do
     new_min =
@@ -70,20 +98,36 @@ defmodule SM.Number do
     get_float_number(min, max)
   end
 
-  def findmax(map, max) do
+  def findmax(map, max, _, type) when type == "integer" do
     case {map["maximum"], map["exclusiveMaximum"]} do
-      {x, y} when x != nil and y and is_integer(x) -> x - 1
-      {x, y} when x != nil and y and is_float(x) -> x - 0.1
-      {x, _} when x != nil -> x
+      {x, y} when is_integer(x) and y -> x - 1
+      {x, y} when is_float(x) and y -> trunc(x)
+      {x, _} when is_number(x) -> x
       _ -> max
     end
   end
 
-  def findmin(map, min) do
+  def findmax(map, max, step_right, type) when type == "number" do
+    case {map["maximum"], map["exclusiveMaximum"]} do
+      {x, y} when is_number(x) and y -> x - step_right
+      {x, _} when is_number(x) -> x
+      _ -> max
+    end
+  end
+
+  def findmin(map, min, _, type) when type == "integer" do
     case {map["minimum"], map["exclusiveMinimum"]} do
-      {x, y} when x != nil and y -> x + 1
-      {x, y} when x != nil and y and is_float(x) -> x + 0.1
-      {x, _} when x != nil -> x
+      {x, y} when is_integer(x) and y -> x + 1
+      {x, y} when is_float(x) and y -> trunc(x)
+      {x, _} when is_number(x) -> x
+      _ -> min
+    end
+  end
+
+  def findmin(map, min, step_left, type) when type == "number" do
+    case {map["minimum"], map["exclusiveMinimum"]} do
+      {x, y} when is_number(x) and y -> x + step_left
+      {x, _} when is_number(x) -> x
       _ -> min
     end
   end
@@ -96,13 +140,13 @@ defmodule SM.Number do
   def getmultipleof(mult, min, max) when is_float(mult) do
     fn_check = fn x, y -> x * y >= min and x * y <= max end
 
-    for(n <- trunc(min / mult)..trunc(max / mult), fn_check.(n, mult), do: n * mult)
-    |> Enum.random()
+    x =
+      for(n <- trunc(min / mult)..trunc(max / mult), fn_check.(n, mult), do: n * mult)
+      |> Enum.random()
   end
 
   def get_float_number(min, max) do
-    interval = :rand.uniform(1000)
-    fraction = (max - min) / interval
-    for(n <- 1..interval, do: min + n * fraction) |> Enum.random()
+    fraction = (max - min) / 1000
+    for(n <- 1..1000, do: min + n * fraction) |> Enum.random()
   end
 end
