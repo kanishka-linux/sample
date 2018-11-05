@@ -46,7 +46,7 @@ defmodule SM do
   end
   
   def gen_type(type, map) when type == "null" do 
-    "null"
+    nil
   end
     
   def gen_enum(list, type) do
