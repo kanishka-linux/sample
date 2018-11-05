@@ -60,6 +60,24 @@ defmodule SMTest do
     assert ExJsonSchema.Validator.valid?(schema, val)
   end
 
+  test "test fraction" do
+    x = ~s({"type": "number", "maximum": 9.7, "minimum": 9.65, "multipleOf": 0.04})
+    schema = Poison.decode!(x)
+    val = SM.generator(x)
+    IO.puts(val)
+    assert ExJsonSchema.Validator.valid?(schema, val)
+  end
+
+  test "test fraction excl" do
+    x =
+      ~s({"type": "number", "maximum": 8.1, "minimum": 7.79, "multipleOf": 0.3, "exclusiveMaximum": true, "exclusiveMinimum": true})
+
+    schema = Poison.decode!(x)
+    val = SM.generator(x)
+    IO.puts(val)
+    assert ExJsonSchema.Validator.valid?(schema, val)
+  end
+
   test "test number negative" do
     x = ~s({"type": "number", "maximum": -3, "minimum": -9})
     schema = Poison.decode!(x)
