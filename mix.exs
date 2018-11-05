@@ -25,7 +25,8 @@ defmodule SM.MixProject do
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"},
       {:randex, git: "https://github.com/ananthakumaran/randex", tag: "v0.4.0"},
       {:stream_data, "~>0.1"},
-      {:poison, "~>3.1"}
+      {:poison, "~>3.1"},
+      {:ex_json_schema, "~> 0.5.4"}
     ]
   end
 end
