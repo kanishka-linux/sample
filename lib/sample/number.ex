@@ -87,7 +87,7 @@ defmodule SM.Number do
   end
 
   def random_number_int(mult, min, max) when is_nil(mult) do
-    Enum.random(min..max)
+    StreamData.integer(min..max)
   end
 
   def random_number_float(mult, min, max) when is_float(mult) do
@@ -134,19 +134,17 @@ defmodule SM.Number do
 
   def getmultipleof(mult, min, max) when is_integer(mult) do
     fn_mod = fn x -> rem(x, mult) == 0 end
-    for(n <- min..max, fn_mod.(n), do: n) |> Enum.random()
+    StreamData.filter(StreamData.integer(min..max), fn_mod, 100)
   end
 
   def getmultipleof(mult, min, max) when is_float(mult) do
     fn_check = fn x, y -> x * y >= min and x * y <= max end
 
-    x =
-      for(n <- trunc(min / mult)..trunc(max / mult), fn_check.(n, mult), do: n * mult)
-      |> Enum.random()
+    for(n <- trunc(min / mult)..trunc(max / mult), fn_check.(n, mult), do: n * mult)
+    |> StreamData.member_of()
   end
 
   def get_float_number(min, max) do
-    fraction = (max - min) / 1000
-    for(n <- 1..1000, do: min + n * fraction) |> Enum.random()
+    StreamData.filter(StreamData.float([{:min, min}, {:max, max}]), fn x -> true end, 100)
   end
 end

@@ -41,18 +41,18 @@ defmodule SM do
   end
 
   def gen_type(type, map) when type == "boolean" do
-    Enum.random([true, false])
+    StreamData.boolean()
   end
 
   def gen_type(type, map) when type == "null" do
-    nil
+    StreamData.constant(nil)
   end
 
   def gen_enum(list, type) do
     nlist =
       case type do
         x when x == "integer" ->
-          for n <- list, is_integer(n), do: n
+          nlist = for n <- list, is_integer(n), do: n
 
         x when x == "number" ->
           for n <- list, is_number(n), do: n
@@ -64,6 +64,6 @@ defmodule SM do
           list
       end
 
-    Enum.random(nlist)
+    StreamData.member_of(nlist)
   end
 end
