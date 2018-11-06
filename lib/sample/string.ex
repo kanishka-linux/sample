@@ -22,6 +22,8 @@ defmodule SM.String do
 
     if min <= max do
       Randex.stream(~r/[a-zA-Z0-9]{#{min},#{max}}/)
+      |> Enum.take(100)
+      |> Randex.Generator.StreamData.member_of()
     end
   end
 
@@ -30,6 +32,6 @@ defmodule SM.String do
   end
 
   def stringer(map, enum, pattern) when is_binary(pattern) do
-    Randex.stream(~r/#{pattern}/)
+    Randex.stream(~r/#{pattern}/) |> Enum.take(100) |> Randex.Generator.StreamData.member_of()
   end
 end
