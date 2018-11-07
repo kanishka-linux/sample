@@ -9,6 +9,14 @@ defmodule SMTest do
     IO.inspect(Enum.take(gen, 1))
     # assert ExJsonSchema.Validator.valid?(schema, val)
   end
+  
+  test "test array items" do
+    x = ~s({"type": "array", "items" : [{"type": "integer"}, {"type": "string"}, {"type": "boolean"}]})
+    gen = SM.generator(x)
+    schema = Poison.decode!(x)
+    IO.inspect(Enum.take(gen, 1))
+    # assert ExJsonSchema.Validator.valid?(schema, val)
+  end
 
   test "test string regex" do
     x = ~s({"type": "string", "pattern": "[a-zA-Z0-9_]{5,10}@abc[.]\(org|com|in\)"})
