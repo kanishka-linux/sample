@@ -15,6 +15,7 @@ defmodule SM do
   end
 
   def gen_init(map) do
+  IO.inspect map
     gen_all(map, map["enum"], map["type"])
   end
 
@@ -32,12 +33,8 @@ defmodule SM do
     SM.String.gen_string(map)
   end
 
-  def gen_type(type, map) when type == "integer" do
-    SM.Number.gen_number(map, "integer")
-  end
-
-  def gen_type(type, map) when type == "number" do
-    SM.Number.gen_number(map, "number")
+  def gen_type(type, map) when type == "integer" or type == "number" do
+    SM.Number.gen_number(map, type)
   end
 
   def gen_type(type, map) when type == "boolean" do
@@ -46,6 +43,10 @@ defmodule SM do
 
   def gen_type(type, map) when type == "null" do
     StreamData.constant(nil)
+  end
+  
+  def gen_type(type, map) when type == "array" do
+    SM.Array.gen_array(map, type)
   end
 
   def gen_enum(list, type) do
@@ -59,6 +60,9 @@ defmodule SM do
 
         x when x == "string" ->
           for n <- list, is_binary(n), do: n
+          
+        x when x == "array" ->
+          for n <- list, is_list(n), do: n
 
         _ ->
           list
