@@ -2,16 +2,35 @@ defmodule SMTest do
   use ExUnit.Case
   doctest SM
 
-  test "test string" do
-    x = ~s({"type": "string", "maxLength": 5, "minLength": 1})
+  test "test array items" do
+    x =
+      ~s({"type": "array", "items" : [{"type": "integer"}, {"type": "string"}, {"type": "boolean"}], "additionalItems": {"type": "boolean"} })
+
     gen = SM.generator(x)
     schema = Poison.decode!(x)
     IO.inspect(Enum.take(gen, 1))
     # assert ExJsonSchema.Validator.valid?(schema, val)
   end
+
+  test "test array item with bounds" do
+    x = ~s({"type": "array", "items" : {"type": "integer"}, "minItems": 3, "maxItems": 10 })
+    gen = SM.generator(x)
+    schema = Poison.decode!(x)
+    IO.inspect(Enum.take(gen, 3))
+    # assert ExJsonSchema.Validator.valid?(schema, val)
+  end
+
+  test "test array single item" do
+    x = ~s({"type": "array", "items" : {"type": "integer"}})
+    gen = SM.generator(x)
+    schema = Poison.decode!(x)
+    IO.inspect(Enum.take(gen, 3))
+    # assert ExJsonSchema.Validator.valid?(schema, val)
+  end
+
   
-  test "test array items" do
-    x = ~s({"type": "array", "items" : [{"type": "integer"}, {"type": "string"}, {"type": "boolean"}]})
+  test "test string" do
+    x = ~s({"type": "string", "maxLength": 5, "minLength": 1})
     gen = SM.generator(x)
     schema = Poison.decode!(x)
     IO.inspect(Enum.take(gen, 1))
@@ -133,4 +152,5 @@ defmodule SMTest do
     IO.inspect(Enum.take(gen, 1))
     # assert ExJsonSchema.Validator.valid?(schema, val)
   end
+  
 end
