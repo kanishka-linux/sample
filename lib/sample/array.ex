@@ -33,8 +33,7 @@ defmodule SM.Array do
   end
 
   def arraytype(map, enum, items) when is_nil(items) and is_nil(enum) do
-    list = Enum.slice(@type_list, 0, length(@type_list) - 1)
-    item = SM.gen_init(choose_item(list))
+    item = get_one_of()
     decide_min_max(map, item, map["minItems"], map["maxItems"])
   end
 
@@ -90,17 +89,13 @@ defmodule SM.Array do
     end
   end
 
+  def get_one_of() do
+    for(n <- @type_list, is_map(n), do: SM.gen_init(n)) |> StreamData.one_of()
+  end
+
   def add_additional_items(list, bool, max, min) when is_boolean(bool) and bool do
-    add_item = choose_item([true, false])
-
-    nlist =
-      if add_item do
-        list ++ [select_one_item()]
-      else
-        list
-      end
-
-    generate_list(list, nlist, max, min, add_item)
+    nlist = list ++ [get_one_of()]
+    generate_list(list, nlist, max, min)
   end
 
   def add_additional_items(list, bool, max, min) when is_boolean(bool) and not bool do
@@ -110,45 +105,19 @@ defmodule SM.Array do
   end
 
   def add_additional_items(list, map, max, min) when is_map(map) do
-    add_item = choose_item([true, false])
-
-    nlist =
-      if add_item do
-        list ++ [SM.gen_init(map)]
-      else
-        list
-      end
-
-    generate_list(list, nlist, max, min, add_item)
+    nlist = list ++ [map |> SM.gen_init()]
+    generate_list(list, nlist, max, min)
   end
 
-  def generate_list(list, nlist, max, min, add_item) do
+  def generate_list(list, nlist, max, min) do
     cond do
-      add_item and check_bounds(nlist, max, min) ->
+      check_bounds(nlist, max, min) ->
         StreamData.fixed_list(nlist)
 
-      add_item and not check_bounds(nlist, max, min) ->
+      not check_bounds(nlist, max, min) ->
         if check_bounds(list, max, min) do
           StreamData.fixed_list(list)
         end
-
-      not add_item and check_bounds(list, max, min) ->
-        StreamData.fixed_list(list)
-    end
-  end
-
-  def choose_item(list) do
-    choice = :rand.uniform(length(list))
-    Enum.fetch!(list, choice - 1)
-  end
-
-  def select_one_item() do
-    item = choose_item(@type_list)
-
-    if is_map(item) do
-      SM.gen_init(item)
-    else
-      []
     end
   end
 end
