@@ -48,6 +48,10 @@ defmodule SM do
     SM.Array.gen_array(map, type)
   end
 
+  def gen_type(type, map) when type == "object" do
+    SM.Object.gen_object(map, type)
+  end
+
   def gen_enum(list, type) do
     nlist =
       case type do
@@ -62,6 +66,9 @@ defmodule SM do
 
         x when x == "array" ->
           for n <- list, is_list(n), do: n
+
+        x when x == "object" ->
+          for n <- list, is_map(n), do: n
 
         _ ->
           list
