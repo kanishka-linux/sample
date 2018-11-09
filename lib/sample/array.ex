@@ -112,7 +112,7 @@ defmodule SM.Array do
   def generate_list(list, nlist, max, min) do
     cond do
       check_bounds(nlist, max, min) ->
-        StreamData.fixed_list(nlist)
+        StreamData.one_of([StreamData.fixed_list(list), StreamData.fixed_list(nlist)])
 
       not check_bounds(nlist, max, min) ->
         if check_bounds(list, max, min) do
