@@ -2,6 +2,14 @@ defmodule SMTest do
   use ExUnit.Case
   doctest SM
 
+  test "test anyOf" do
+    x = ~s({"anyOf": [{"type": "object"}, {"type": "array"}]})
+    gen = SM.generator(x)
+    schema = Poison.decode!(x)
+    IO.inspect(Enum.take(gen, 3))
+    # assert ExJsonSchema.Validator.valid?(schema, val)
+  end
+
   test "test object with no properties" do
     x = ~s({"type": "object"})
     gen = SM.generator(x)
