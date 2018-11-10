@@ -23,11 +23,13 @@ defmodule SM.Notype do
   def gen_notype(map, type) do
     nmap = for {k, v} <- map, into: %{}, do: {k, v}
     nlist = for {k, v} <- map, into: [], do: @prop[k]
+
     types =
       Enum.reduce(nlist, nil, fn
         x, acc when not is_nil(x) -> x
         x, acc when is_nil(x) -> acc
       end)
+
     nmap = if not is_nil(types), do: Map.put(nmap, "type", types), else: nmap
     if nmap["type"], do: SM.gen_init(nmap)
   end
