@@ -12,13 +12,13 @@ defmodule SM.Array do
 
   def arraytype(map, enum, items) when enum != nil, do: SM.gen_enum(enum, "array")
 
-  def arraytype(map, enum, items) when is_map(items) do
-    item = SM.gen_init(items)
-    decide_min_max(map, item, map["minItems"], map["maxItems"])
-  end
-
-  def arraytype(map, enum, items) when is_list(items) do
-    list = for n <- items, is_map(n), do: SM.gen_init(n)
+  def arraytype(map, enum, items) when is_list(items) or is_map(items) do
+    list =
+      if is_list(items) do
+        for n <- items, is_map(n), do: SM.gen_init(n)
+      else
+        [SM.gen_init(items)]
+      end
 
     case map["additionalItems"] do
       x when (is_boolean(x) and x) or is_nil(x) ->
@@ -94,8 +94,7 @@ defmodule SM.Array do
   end
 
   def add_additional_items(list, bool, max, min) when is_boolean(bool) and bool do
-    nlist = list ++ [get_one_of()]
-    generate_list(list, nlist, max, min)
+    generate_list(list, get_one_of(), max, min)
   end
 
   def add_additional_items(list, bool, max, min) when is_boolean(bool) and not bool do
@@ -105,19 +104,23 @@ defmodule SM.Array do
   end
 
   def add_additional_items(list, map, max, min) when is_map(map) do
-    nlist = list ++ [map |> SM.gen_init()]
-    generate_list(list, nlist, max, min)
+    generate_list(list, SM.gen_init(map), max, min)
   end
 
-  def generate_list(list, nlist, max, min) do
-    cond do
-      check_bounds(nlist, max, min) ->
-        StreamData.one_of([StreamData.fixed_list(list), StreamData.fixed_list(nlist)])
+  def generate_list(olist, additional, z, y) do
+    StreamData.bind(StreamData.fixed_list(olist), fn list ->
+      StreamData.bind(
+        StreamData.list_of(additional),
+        fn
+          nlist
+          when (not is_nil(y) and length(list) + length(nlist) < y) or
+                 (not is_nil(z) and length(list) + length(nlist) > z) ->
+            StreamData.constant([])
 
-      not check_bounds(nlist, max, min) ->
-        if check_bounds(list, max, min) do
-          StreamData.fixed_list(list)
+          nlist when true ->
+            StreamData.constant(list ++ nlist)
         end
-    end
+      )
+    end)
   end
 end
