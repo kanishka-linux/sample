@@ -26,47 +26,146 @@ defmodule SM.Object do
         for n <- map["required"], into: %{}, do: {n, Map.get(new_prop, n)}
       end
 
-    if Map.size(req) == 0 do
-      check_additional_properties(map, 0, req, new_prop)
+    non_req =
+      if is_map(req) and map_size(req) > 0 do
+        for {k, v} <- new_prop, req[k] == nil, into: %{}, do: {k, v}
+      end
+
+    if is_nil(req) or map_size(req) == 0 do
+      check_additional_properties(map, 0, req, non_req, new_prop)
     else
-      check_additional_properties(map, Map.size(req), req, new_prop)
+      check_additional_properties(map, Map.size(req), req, non_req, new_prop)
     end
   end
 
-  def check_additional_properties(map, req_size, req, new_prop) when req_size == 0 do
-    case map["additionalProperties"] do
-      x when is_nil(x) or (is_boolean(x) and x) ->
+  def bind_function(new_prop, additional, y, z) do
+    StreamData.bind(StreamData.optional_map(new_prop), fn mapn ->
+      StreamData.bind(
+        additional,
+        fn
+          nmap
+          when (not is_nil(y) and map_size(mapn) + map_size(nmap) < y) or
+                 (not is_nil(z) and map_size(mapn) + map_size(nmap) > z) ->
+            StreamData.constant(%{})
+
+          nmap when is_map(nmap) ->
+            StreamData.constant(Map.merge(mapn, nmap))
+        end
+      )
+    end)
+  end
+
+  def bind_function_req(req, non_req, y, z) when is_map(non_req) or is_nil(non_req) do
+    StreamData.bind(
+      StreamData.fixed_map(req),
+      fn
+        mapn when is_map(non_req) ->
+          StreamData.bind(StreamData.optional_map(non_req), fn
+            nmap
+            when not is_nil(y) and map_size(mapn) + map_size(nmap) >= y and
+                   (not is_nil(z) and map_size(mapn) + map_size(nmap) <= z) ->
+              StreamData.constant(Map.merge(mapn, nmap))
+
+            nmap
+            when is_nil(y) and (not is_nil(z) and map_size(mapn) + map_size(nmap) <= z) ->
+              StreamData.constant(Map.merge(mapn, nmap))
+
+            nmap
+            when not is_nil(y) and map_size(mapn) + map_size(nmap) >= y and is_nil(z) ->
+              StreamData.constant(Map.merge(mapn, nmap))
+
+            nmap
+            when is_nil(y) and is_nil(z) ->
+              StreamData.constant(Map.merge(mapn, nmap))
+
+            nmap when true ->
+              StreamData.constant(%{})
+          end)
+
+        mapn
+        when is_nil(non_req) and
+               ((not is_nil(y) and map_size(mapn) < y) or (not is_nil(z) and map_size(mapn) > z)) ->
+          StreamData.constant(%{})
+
+        mapn when is_nil(non_req) ->
+          StreamData.constant(mapn)
+      end
+    )
+  end
+
+  def bind_function_req(req, non_req, y, z, add) when not is_nil(non_req) do
+    StreamData.bind(
+      StreamData.fixed_map(req),
+      fn
+        mapn when is_map(non_req) ->
+          StreamData.bind(non_req, fn
+            nmap
+            when not is_nil(y) and map_size(mapn) + map_size(nmap) >= y and
+                   (not is_nil(z) and map_size(mapn) + map_size(nmap) <= z) ->
+              StreamData.constant(Map.merge(mapn, nmap))
+
+            nmap
+            when is_nil(y) and (not is_nil(z) and map_size(mapn) + map_size(nmap) <= z) ->
+              StreamData.constant(Map.merge(mapn, nmap))
+
+            nmap
+            when not is_nil(y) and map_size(mapn) + map_size(nmap) >= y and is_nil(z) ->
+              StreamData.constant(Map.merge(mapn, nmap))
+
+            nmap
+            when is_nil(y) and is_nil(z) ->
+              StreamData.constant(Map.merge(mapn, nmap))
+
+            nmap when true ->
+              StreamData.constant(%{})
+          end)
+      end
+    )
+  end
+
+  def check_additional_properties(map, req_size, req, non_req, new_prop)
+      when is_nil(req) or req_size == 0 do
+    case {map["additionalProperties"], map["minProperties"], map["maxProperties"]} do
+      {x, y, z} when is_nil(x) or (is_boolean(x) and x) ->
         additional = objectype(map, nil, nil)
-        StreamData.one_of([StreamData.optional_map(new_prop), additional])
+        bind_function(new_prop, additional, y, z)
 
-      x when is_boolean(x) and not x ->
-        StreamData.optional_map(new_prop)
+      {x, y, z} when is_boolean(x) and not x ->
+        StreamData.bind(
+          StreamData.optional_map(new_prop),
+          fn
+            map
+            when (not is_nil(y) and map_size(map) < y) or (not is_nil(z) and map_size(map) > z) ->
+              StreamData.constant(%{})
 
-      x when is_map(x) ->
+            map when true ->
+              StreamData.constant(map)
+          end
+        )
+
+      {x, y, z} when is_map(x) ->
         obj = SM.gen_init(x)
-        StreamData.one_of([StreamData.optional_map(new_prop), obj])
+        key = SM.gen_init(%{"type" => "string", "maxLength" => 10, "minLength" => 4})
+        bind_function(new_prop, StreamData.map_of(key, obj), y, z)
     end
   end
 
-  def check_additional_properties(map, req_size, req, new_prop) when req_size > 0 do
-    case map["additionalProperties"] do
-      x when is_nil(x) or (is_boolean(x) and x) ->
+  def check_additional_properties(map, req_size, req, non_req, new_prop) when req_size > 0 do
+    case {map["additionalProperties"], map["minProperties"], map["maxProperties"]} do
+      {x, y, z} when is_nil(x) or (is_boolean(x) and x) ->
         additional = objectype(map, nil, nil)
-        add_dict = Map.merge(new_prop, %{"additionalProperties" => additional})
+        val2 = bind_function(non_req, additional, y, z)
+        bind_function_req(req, val2, y, z, "additional")
 
-        StreamData.one_of([
-          StreamData.fixed_map(req),
-          StreamData.fixed_map(new_prop),
-          StreamData.fixed_map(add_dict)
-        ])
+      {x, y, z} when is_boolean(x) and not x ->
+        bind_function_req(req, non_req, y, z)
 
-      x when is_boolean(x) and not x ->
-        StreamData.one_of([StreamData.fixed_map(req), StreamData.fixed_map(new_prop)])
-
-      x when is_map(x) ->
+      {x, y, z} when is_map(x) ->
         obj = SM.gen_init(x)
-        add_dict = Map.merge(new_prop, %{"additionalProperties" => obj})
-        StreamData.one_of([StreamData.fixed_map(req), StreamData.fixed_map(new_prop), add_dict])
+        key = SM.gen_init(%{"type" => "string", "maxLength" => 10, "minLength" => 4})
+        val1 = decide_min_max(map, key, obj, y, z)
+        val2 = bind_function(non_req, val1, y, z)
+        bind_function_req(req, val2, y, z, "additional")
     end
   end
 
