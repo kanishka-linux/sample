@@ -196,6 +196,14 @@ defmodule SMTest do
     # assert ExJsonSchema.Validator.valid?(schema, val)
   end
 
+  test "test notype" do
+    x = ~s({"maxLength": 20, "minLength": 10, "minItems": 3})
+    schema = Poison.decode!(x)
+    gen = SM.generator(x)
+    IO.inspect(Enum.take(gen, 1))
+    # assert ExJsonSchema.Validator.valid?(schema, val)
+  end
+
   test "test type both integer string" do
     x = ~s({"type": ["string", "integer"], "maxLength": 5, "minLength": 1, "maximum": 29})
     schema = Poison.decode!(x)
