@@ -14,6 +14,10 @@ defmodule SM do
     jschema |> Poison.decode!() |> gen_init()
   end
 
+  def gen_init(%{"anyOf" => options} = map) when is_list(options) do
+    for(n <- options, is_map(n), do: SM.gen_init(n)) |> StreamData.one_of()
+  end
+
   def gen_init(map) do
     gen_all(map, map["enum"], map["type"])
   end
