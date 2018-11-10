@@ -28,6 +28,10 @@ defmodule SM do
 
   def gen_all(map, enum, type) when type in @types, do: gen_type(type, map)
 
+  def gen_all(map, enum, type) when type == nil do
+    SM.Notype.gen_notype(map, type)
+  end
+
   def gen_type(type, map) when type == "string" do
     SM.String.gen_string(map)
   end
