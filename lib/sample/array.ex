@@ -8,6 +8,10 @@ defmodule SM.Array do
     nil
   ]
 
+  @min_items 0
+
+  @max_items 1000
+
   def gen_array(map, type), do: arraytype(map, map["enum"], map["items"])
 
   def arraytype(map, enum, items) when enum != nil, do: SM.gen_enum(enum, "array")
@@ -20,21 +24,42 @@ defmodule SM.Array do
         [SM.gen_init(items)]
       end
 
+    {min, max} = get_min_max(map)
+
     case map["additionalItems"] do
       x when (is_boolean(x) and x) or is_nil(x) ->
-        add_additional_items(list, true, map["maxItems"], map["minItems"])
+        add_additional_items(list, true, max, min)
 
       x when is_map(x) ->
-        add_additional_items(list, x, map["maxItems"], map["minItems"])
+        add_additional_items(list, x, max, min)
 
       _ ->
-        add_additional_items(list, false, map["maxItems"], map["minItems"])
+        add_additional_items(list, false, max, min)
     end
+  end
+
+  def get_min_max(map) do
+    min =
+      if map["minItems"] do
+        min = map["minItems"]
+      else
+        min = @min_items
+      end
+
+    max =
+      if map["maxItems"] do
+        max = map["maxItems"]
+      else
+        max = @max_items
+      end
+
+    {min, max}
   end
 
   def arraytype(map, enum, items) when is_nil(items) and is_nil(enum) do
     item = get_one_of()
-    decide_min_max(map, item, map["minItems"], map["maxItems"])
+    {min, max} = get_min_max(map)
+    decide_min_max(map, item, min, max)
   end
 
   def decide_min_max(map, item, min, max)
@@ -43,30 +68,6 @@ defmodule SM.Array do
       StreamData.uniq_list_of(item, min_length: min, max_length: max)
     else
       StreamData.list_of(item, min_length: min, max_length: max)
-    end
-  end
-
-  def decide_min_max(map, item, min, max) when is_integer(min) and is_nil(max) do
-    if map["uniqueItems"] do
-      StreamData.uniq_list_of(item, min_length: min)
-    else
-      StreamData.list_of(item, min_length: min)
-    end
-  end
-
-  def decide_min_max(map, item, min, max) when is_nil(min) and is_integer(max) do
-    if map["uniqueItems"] do
-      StreamData.uniq_list_of(item, max_length: max)
-    else
-      StreamData.list_of(item, max_length: max)
-    end
-  end
-
-  def decide_min_max(map, item, min, max) when is_nil(min) and is_nil(max) do
-    if map["uniqueItems"] do
-      StreamData.uniq_list_of(item)
-    else
-      StreamData.list_of(item)
     end
   end
 
@@ -107,18 +108,21 @@ defmodule SM.Array do
     generate_list(list, SM.gen_init(map), max, min)
   end
 
-  def generate_list(olist, additional, z, y) do
+  def generate_list(olist, additional, max, min) do
     StreamData.bind(StreamData.fixed_list(olist), fn list ->
-      StreamData.bind(
+      StreamData.bind_filter(
         StreamData.list_of(additional),
         fn
           nlist
-          when (not is_nil(y) and length(list) + length(nlist) < y) or
-                 (not is_nil(z) and length(list) + length(nlist) > z) ->
-            StreamData.constant([])
+          when (length(list) + length(nlist)) in min..max ->
+            {:cont, StreamData.constant(list ++ nlist)}
+
+          nlist
+          when length(list) in min..max ->
+            {:cont, StreamData.constant(list)}
 
           nlist when true ->
-            StreamData.constant(list ++ nlist)
+            :skip
         end
       )
     end)
