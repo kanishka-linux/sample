@@ -15,7 +15,9 @@ defmodule SM do
   end
 
   def gen_init(%{"anyOf" => options} = map) when is_list(options) do
-    for(n <- options, is_map(n), do: SM.gen_init(n)) |> StreamData.one_of()
+    nmap = Map.drop(map, ["anyOf"])
+    for(n <- options, is_map(n), do: SM.gen_init(Map.merge(nmap, n)))
+    |> StreamData.one_of()
   end
 
   def gen_init(map) do
