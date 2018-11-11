@@ -20,10 +20,16 @@ defmodule SM.String do
         max = @strlen_max
       end
 
+    re = Randex.stream(~r/[a-zA-Z0-9\_]{#{min},#{max}}/)
+
     if min <= max do
-      Randex.stream(~r/[a-zA-Z0-9]{#{min},#{max}}/)
-      |> Enum.take(100)
-      |> Randex.Generator.StreamData.member_of()
+      StreamData.bind_filter(StreamData.string(:alphanumeric), fn
+        x when byte_size(x) in min..max ->
+          {:cont, StreamData.constant(x)}
+
+        x when true ->
+          {:cont, Enum.take(re, 1) |> StreamData.member_of()}
+      end)
     end
   end
 
@@ -32,6 +38,7 @@ defmodule SM.String do
   end
 
   def stringer(map, enum, pattern) when is_binary(pattern) do
-    Randex.stream(~r/#{pattern}/) |> Enum.take(100) |> Randex.Generator.StreamData.member_of()
+    pat = Randex.stream(~r/#{pattern}/)
+    StreamData.bind(StreamData.integer(), fn x -> Enum.take(pat, 1) |> StreamData.member_of() end)
   end
 end
