@@ -6,20 +6,8 @@ defmodule SM.String do
   def gen_string(map), do: stringer(map, map["enum"], map["pattern"])
 
   def find_min_max(map) do
-    min =
-      if map["minLength"] do
-        min = map["minLength"]
-      else
-        min = @strlen_min
-      end
-
-    max =
-      if map["maxLength"] do
-        max = map["maxLength"]
-      else
-        max = @strlen_max
-      end
-
+    min = Map.get(map, "minLength", @strlen_min)
+    max = Map.get(map, "maxLength", @strlen_max)
     {min, max}
   end
 
@@ -45,11 +33,12 @@ defmodule SM.String do
 
   def stringer(map, enum, pattern) when is_binary(pattern) do
     {min, max} = find_min_max(map)
-    pat = Randex.stream(~r/#{pattern}{#{min},{max}#}/)
+    pat = Randex.stream(~r/#{pattern}/, mod: Randex.Generator.StreamData)
 
     if min <= max do
-      StreamData.bind(StreamData.integer(), fn x ->
-        Enum.take(pat, 1) |> StreamData.member_of()
+      StreamData.bind_filter(pat, fn
+        x when byte_size(x) in min..max -> {:cont, StreamData.constant(x)}
+        x when true -> :skip
       end)
     end
   end
