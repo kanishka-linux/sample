@@ -13,20 +13,8 @@ defmodule SM.Object do
   @max_properties 1000
 
   def get_min_max(map) do
-    min =
-      if map["minProperties"] do
-        min = map["minProperties"]
-      else
-        min = @min_properties
-      end
-
-    max =
-      if map["maxProperties"] do
-        max = map["maxProperties"]
-      else
-        max = @max_properties
-      end
-
+    min = Map.get(map, "minProperties", @min_properties)
+    max = Map.get(map, "maxProperties", @max_properties)
     {min, max}
   end
 
