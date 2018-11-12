@@ -5,7 +5,7 @@ defmodule SMTest do
   def test_generator(jschema) do
     gen = SM.generator(jschema)
     schema = Poison.decode!(jschema)
-    #IO.inspect(Enum.take(gen, 3))
+    IO.inspect(Enum.take(gen, 3))
 
     Enum.take(gen, 100)
     |> Enum.each(fn val -> ExJsonSchema.Validator.valid?(schema, val) end)
@@ -77,6 +77,13 @@ defmodule SMTest do
 
   test "test string regex" do
     jschema = ~s({"type": "string", "pattern": "[a-zA-Z0-9_]{5,10}@abc[.]\(org|com|in\)"})
+    assert test_generator(jschema)
+  end
+
+  test "test string regex with length" do
+    jschema =
+      ~s({"type": "string", "pattern": "[a-zA-Z0-9_]{5,10}@abc[.]\(org|com|in\)", "minLength": 5, "maxLength": 20})
+
     assert test_generator(jschema)
   end
 
