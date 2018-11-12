@@ -43,7 +43,7 @@ defmodule SM do
     SM.String.gen_string(map)
   end
 
-  def gen_type(type, map) when type == "integer" or type == "number" do
+  def gen_type(type, map) when type in ["integer", "number"] do
     SM.Number.gen_number(map, type)
   end
 
