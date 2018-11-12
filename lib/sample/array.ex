@@ -39,20 +39,8 @@ defmodule SM.Array do
   end
 
   def get_min_max(map) do
-    min =
-      if map["minItems"] do
-        min = map["minItems"]
-      else
-        min = @min_items
-      end
-
-    max =
-      if map["maxItems"] do
-        max = map["maxItems"]
-      else
-        max = @max_items
-      end
-
+    min = Map.get(map, "minItems", @min_items)
+    max = Map.get(map, "maxItems", @max_items)
     {min, max}
   end
 
@@ -71,25 +59,6 @@ defmodule SM.Array do
     end
   end
 
-  def check_bounds(list, max, min) do
-    case {min, max} do
-      {x, y} when is_nil(x) and is_nil(y) ->
-        true
-
-      {x, y} when is_nil(x) and is_integer(y) and length(list) <= y ->
-        true
-
-      {x, y} when is_integer(x) and is_nil(y) and length(list) >= x ->
-        true
-
-      {x, y} when is_integer(x) and is_integer(y) and length(list) >= x and length(list) <= y ->
-        true
-
-      _ ->
-        false
-    end
-  end
-
   def get_one_of() do
     for(n <- @type_list, is_map(n), do: SM.gen_init(n)) |> StreamData.one_of()
   end
@@ -99,7 +68,7 @@ defmodule SM.Array do
   end
 
   def add_additional_items(list, bool, max, min) when is_boolean(bool) and not bool do
-    if check_bounds(list, max, min) do
+    if length(list) in min..max do
       StreamData.fixed_list(list)
     end
   end
